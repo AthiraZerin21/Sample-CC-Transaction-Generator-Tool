@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Sample Credit Card Transaction Generator</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      background: linear-gradient(135deg, #f5f7fa 25%, #c3cfe2 100%);
+      background-attachment: fixed;
+    }
+
+    header {
+      background: #2c3e50;
+      color: white;
+      padding: 15px 30px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+    }
+
+    header h1 { margin: 0; font-size: 20px; }
+    header img { height: 40px; width: auto; }
+
+    nav a {
+      margin-left: 20px;
+      color: white;
+      text-decoration: none;
+      font-weight: bold;
+    }
+
+    nav a:hover { text-decoration: underline; }
+
+    .container { padding: 20px 40px; }
+
+    h2 {
+      margin-bottom: 15px;
+      color: #2c3e50;
+      border-bottom: 2px solid #ccc;
+      padding-bottom: 5px;
+    }
+
+    .main-section {
+      display: grid;
+      grid-template-columns: 2fr 1fr;
+      gap: 30px;
+      margin-bottom: 30px;
+      align-items: start;
+    }
+
+    .form-section {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 25px;
+    }
+
+    .form-group { margin-bottom: 15px; }
+
+    label {
+      display: block;
+      font-weight: bold;
+      margin-bottom: 5px;
+      text-align: left;
+    }
+
+    input, select {
+      width: 100%;
+      padding: 6px 8px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      font-size: 14px;
+    }
+
+    button {
+      padding: 8px 16px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 14px;
+      background: #3498db;
+      color: white;
+    }
+
+    button:hover { background: #2980b9; }
+
+    .options {
+      padding: 15px;
+      background: #f9f9f9;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+
+    th, td {
+      border: 1px solid #ddd;
+      padding: 6px;
+      text-align: center;
+    }
+
+    th { background: #2c3e50; color: white; }
+
+    .card-input-wrapper {
+      display: flex;
+      gap: 5px;
+      align-items: center;
+    }
+
+    .card-input-wrapper input { flex: 1; }
+    .btn-small { padding: 4px 8px; font-size: 12px; }
+  </style>
+</head>
+<body>
+<header>
+  <div style="display:flex; align-items:center;">
+    <img src="{{ url_for('static', filename='Qlogo.jfif') }}" alt="Logo" style="height:30px; margin-right:10px;">
+    <h1>Sample Credit Card Transaction Generator</h1>
+  </div>
+  <nav>
+  <a href="{{ url_for('home') }}">Home</a>
+  <a href="{{ url_for('about') }}">About</a>
+</nav>
+
+
+</header>
+
+<div class="container" id=home>
+  <form method="post" action="/preview">
+    <div class="main-section">
+      <div>
+        <h2>Input Fields</h2>
+        <div class="form-section">
+          <div class="form-group">
+            <label>Cardholder Name</label>
+            <input type="text" name="cardholder_name" autocomplete="off" required>
+        </div>
+
+          <div class="form-group">
+            <label>Number of distinct Card Numbers</label>
+            <input type="number" name="num_cards" min="1" value="1" autocomplete="off" required>
+          </div>
+
+          <div class="form-group">
+            <label>Select Card Type(s)</label>
+            <!-- NOTE: server accepts "card_types" -->
+            <select name="card_types" multiple required>
+              <option value="Visa">Visa</option>
+              <option value="MasterCard">MasterCard</option>
+              <option value="Amex">Amex</option>
+              <option value="RuPay">RuPay</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label>From Date</label>
+            <input type="date" name="from_date" autocomplete="off" required>
+          </div>
+
+          <div class="form-group">
+            <label>Payment Type</label>
+            <input type="text" name="payment_type" autocomplete="off" required>
+          </div>
+
+          <div class="form-group">
+            <label>To Date</label>
+            <input type="date" name="to_date" autocomplete="off" required>
+          </div>
+
+          <div class="form-group">
+            <label>Transaction Currency</label>
+            <select name="currency" multiple required>
+              <option value="INR">INR</option>
+              <option value="USD">USD</option>
+              <option value="EUR">EUR</option>
+              <option value="CAD">CAD</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label>Expense Types (enter number of transactions)</label>
+            <div style="display:grid; grid-template-columns: 1fr 100px; gap:10px; align-items:center;">
+              <span>Airfare</span><input type="number" name="Airfare" min="0" value="0">
+              <span>Accommodation</span><input type="number" name="Accommodation" min="0" value="0">
+              <span>Taxi/Rideshare</span><input type="number" name="Taxi" min="0" value="0">
+              <span>Group Meals</span><input type="number" name="Meals" min="0" value="0">
+              <span>Entertainment & Hospitality</span><input type="number" name="Entertainment" min="0" value="0">
+              <span>Gifts</span><input type="number" name="Gifts" min="0" value="0">
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <div>
+        <h2>Options</h2>
+        <div class="options">
+          <div class="form-group">
+            <label>Download Format</label>
+            <select name="format">
+              <option value="excel">Excel</option>
+              <option value="csv">Text</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label>No. of Negative Transactions</label>
+            <input type="number" name="negative_count" min="0" value="0">
+          </div>
+
+          <button type="submit">Preview Transactions</button>
+        </div>
+      </div>
+    </div>
+  </form>
+
+  <div class="preview">
+    <h2>Preview</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Employee_ID</th>
+          <th>Cardholder_Name</th>
+          <th>Card_Type</th>
+          <th>Card_Number</th>
+          <th>Expense_Type</th>
+          <th>Vendor_Name</th>
+          <th>Transaction_Date</th>
+          <th>Amount</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% if data %}
+          {% for row in data[:50] %}
+            <tr>
+              <td>{{ row.employee_id }}</td>
+              <td>{{ row.cardholder_name }}</td>
+              <td>{{ row.card_type }}</td>
+              <td>{{ row.card_number }}</td>
+              <td>{{ row.expense_type }}</td>
+              <td>{{ row.vendor_name }}</td>
+              <td>{{ row.date }}</td>
+              <td>{{ row.amount }}</td>
+            </tr>
+          {% endfor %}
+        {% else %}
+          <tr><td colspan="8">No transactions to preview</td></tr>
+        {% endif %}
+      </tbody>
+    </table>
+  </div>
+
+  <form action="/download" method="post">
+    <input type="hidden" name="data" value='{{ data|tojson|safe if data is defined else "[]" }}'>
+    <button type="submit">Download File</button>
+  </form>
+</div>
+
+</body>
+</html>
+
+
