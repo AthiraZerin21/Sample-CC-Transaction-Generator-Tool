@@ -1,206 +1,151 @@
 from flask import Flask, render_template, request, send_file
-import random, csv, io, json
+import random, json, io
+import pandas as pd
 from datetime import datetime, timedelta
-from openpyxl import Workbook
-
+ 
 app = Flask(__name__)
-
-# ---------------- STATIC DATA ----------------
+ 
 VENDORS = [
-    "Amazon", "Flipkart", "Uber", "Swiggy", "Zomato", "Indigo Airlines",
-    "MakeMyTrip", "Ola", "Reliance Trends", "Big Bazaar", "ABC Hotel", "XYZ Restaurant"
+    "Amazon", "Flipkart", "Uber", "Swiggy", "Zomato",
+    "Indigo Airlines", "MakeMyTrip", "Ola",
+    "Reliance Trends", "Big Bazaar", "ABC Hotel", "XYZ Restaurant"
 ]
-
+ 
 CURRENCY_SYMBOLS = {
     "INR": "₹",
     "USD": "$",
     "EUR": "€",
     "CAD": "C$"
 }
-
-# ✅ Currency-based realistic ranges
-CURRENCY_RANGES = {
-    "INR": (100, 5000),
-    "USD": (5, 500),
-    "EUR": (5, 450),
-    "CAD": (5, 600)
-}
-
-# ---------------- ROUTES ----------------
+ 
+# ---------------- HOME ----------------
 @app.route("/")
 def home():
-    return render_template('CC_Transaction.html')
-
+    return render_template("CC_Transaction.html")
+ 
 @app.route("/about")
 def about():
-    return render_template('about.html')
-
-
+    return "<h2>Credit Card Transaction Generator Tool</h2>"
+ 
+# ---------------- PREVIEW ----------------
 @app.route("/preview", methods=["POST"])
 def preview():
-
-    user_count = int(request.form.get("user_count", 1))
-    card_types = request.form.getlist("card_types") or request.form.getlist("card_type") or []
-    negative_count = int(request.form.get("negative_count", 0))
-    cardholder_name_input = request.form.get("cardholder_name", "Cardholder")
-
+ 
+    cardholder_name = request.form.get("cardholder_name")
+    payment_type = request.form.get("payment_type")
+    card_types = request.form.getlist("card_types")
     currencies = request.form.getlist("currencies")
-    if not currencies:
-        currencies = ["INR"]
-
-    start_date = request.form.get("from_date")
-    end_date = request.form.get("to_date")
-
-    start = datetime.strptime(start_date, "%Y-%m-%d") if start_date else datetime.now() - timedelta(days=30)
-    end = datetime.strptime(end_date, "%Y-%m-%d") if end_date else datetime.now()
-
-    expense_keys = ["Airfare", "Accommodation", "Taxi", "Group Meals", "Entertainment&Hospitality", "Gifts"]
+    negative_count = int(request.form.get("negative_count", 0))
+    file_type = request.form.get("file_type")
+ 
+    start = datetime.strptime(request.form["from_date"], "%Y-%m-%d")
+    end = datetime.strptime(request.form["to_date"], "%Y-%m-%d")
+ 
+    # Dynamic expense types
+    expense_names = request.form.getlist("expense_name[]")
+    expense_counts = request.form.getlist("expense_count[]")
+ 
     expense_types = {}
-
-    for k in expense_keys:
-        try:
-            v = int(request.form.get(k, 0) or 0)
-        except ValueError:
-            v = 0
-        if v > 0:
-            expense_types[k] = v
-
+    for n, c in zip(expense_names, expense_counts):
+        if n.strip() and int(c) > 0:
+            expense_types[n.strip()] = int(c)
+ 
+    total_transactions = sum(expense_types.values())
+ 
+    # Ensure negative < total
+    if negative_count >= total_transactions:
+        negative_count = max(0, total_transactions - 1)
+ 
     transactions = []
-
-    for u in range(user_count):
-
-        employee_id = f"EMP{random.randint(1000, 9999)}"
-        cardholder_name = cardholder_name_input
-
-        # One card per user
-        card_number = f"{random.randint(4000,4999)}-{random.randint(1000,9999)}-{random.randint(1000,9999)}-{random.randint(1000,9999)}"
-
-        # -------- Positive Transactions --------
-        for expense, count in expense_types.items():
-            for t in range(count):
-
-                card_type = random.choice(card_types) if card_types else ""
-                currency = random.choice(currencies)
-                symbol = CURRENCY_SYMBOLS.get(currency, "")
-                low, high = CURRENCY_RANGES.get(currency, (100, 5000))
-
-                amount_val = round(random.uniform(low, high), 2)
-                amount = f"{symbol}{amount_val}"
-
-                vendor = random.choice(VENDORS)
-                txn_date = start + (end - start) * random.random()
-
-                transactions.append({
-                    "employee_id": employee_id,
-                    "cardholder_name": cardholder_name,
-                    "card_type": card_type,
-                    "card_number": card_number,
-                    "expense_type": expense,
-                    "vendor_name": vendor,
-                    "date": txn_date.strftime("%Y-%m-%d"),
-                    "amount": amount,
-                    "transaction_currency": currency
-                })
-
-        # -------- Negative Transactions --------
-        for n in range(negative_count):
-
-            card_type = random.choice(card_types) if card_types else ""
+ 
+    employee_id = f"EMP{random.randint(1000,9999)}"
+    card_number = f"{random.randint(4000,4999)}-{random.randint(1000,9999)}-{random.randint(1000,9999)}-{random.randint(1000,9999)}"
+ 
+    # Generate normal transactions
+    for expense, count in expense_types.items():
+        for _ in range(count):
             currency = random.choice(currencies)
-            symbol = CURRENCY_SYMBOLS.get(currency, "")
-            low, high = CURRENCY_RANGES.get(currency, (50, 2000))
-
-            neg_val = round(random.uniform(low/2, high/2), 2)
-            neg_amount = f"-{symbol}{neg_val}"
-
-            expense = random.choice(list(expense_types.keys()) or ["Misc"])
-            vendor = random.choice(VENDORS)
-            txn_date = start + (end - start) * random.random()
-
+            symbol = CURRENCY_SYMBOLS[currency]
+            amount_val = round(random.uniform(100, 5000), 2)
+ 
             transactions.append({
                 "employee_id": employee_id,
                 "cardholder_name": cardholder_name,
-                "card_type": card_type,
+                "card_type": random.choice(card_types),
                 "card_number": card_number,
                 "expense_type": expense,
-                "vendor_name": vendor,
-                "date": txn_date.strftime("%Y-%m-%d"),
-                "amount": neg_amount,
+                "vendor_name": random.choice(VENDORS),
+                "date": (start + (end - start) * random.random()).strftime("%Y-%m-%d"),
+                "amount": f"{symbol}{amount_val}",
                 "transaction_currency": currency
             })
-
-    return render_template("CC_Transaction.html", data=transactions)
-
-
+ 
+    # Generate negative transactions
+    for _ in range(negative_count):
+        currency = random.choice(currencies)
+        symbol = CURRENCY_SYMBOLS[currency]
+        amount_val = round(random.uniform(50, 2000), 2)
+ 
+        transactions.append({
+            "employee_id": employee_id,
+            "cardholder_name": cardholder_name,
+            "card_type": random.choice(card_types),
+            "card_number": card_number,
+            "expense_type": random.choice(list(expense_types.keys())),
+            "vendor_name": random.choice(VENDORS),
+            "date": (start + (end - start) * random.random()).strftime("%Y-%m-%d"),
+            "amount": f"-{symbol}{amount_val}",
+            "transaction_currency": currency
+        })
+ 
+    return render_template("CC_Transaction.html", data=transactions, file_type=file_type)
+ 
+# ---------------- DOWNLOAD ----------------
 @app.route("/download", methods=["POST"])
 def download():
-
-    data = request.form.get("data", "[]")
-    file_type = request.form.get("file_type", "txt")
-
-    try:
-        transactions = json.loads(data)
-    except Exception:
-        transactions = []
-
+ 
+    data = json.loads(request.form["data"])
+    file_type = request.form["file_type"]
+ 
     rows = []
-
-    for idx, row in enumerate(transactions, start=1):
-
-        txn_id = f"TXN{idx:05d}"
-        name_on_card = row.get("cardholder_name", "")
-        card_number = row.get("card_number", "")
-        last_segment = card_number.split("-")[-1] if card_number else ""
-        txn_type = row.get("expense_type", "")
-
-        amount_raw = row.get("amount", "")
+ 
+    for idx, row in enumerate(data, start=1):
+        last_segment = row["card_number"].split("-")[-1]
+ 
+        amt = row["amount"]
         for sym in CURRENCY_SYMBOLS.values():
-            amount_raw = amount_raw.replace(sym, "")
-        amount_raw = amount_raw.replace("-", "").strip()
-
-        txn_currency = row.get("transaction_currency", "INR")
-        txn_date = row.get("date", "")
-        merchant = row.get("vendor_name", "")
-        emp_id = row.get("employee_id", "")
-        emp_name = f"Emp_{emp_id[-3:]}"
-
+            amt = amt.replace(sym, "")
+        amt = amt.strip()
+ 
         rows.append([
-            txn_id, name_on_card, last_segment, txn_type,
-            amount_raw, txn_currency, txn_date, merchant,
-            emp_id, emp_name
+            f"TXN{idx:05d}",
+            row["employee_id"],
+            row["cardholder_name"],
+            last_segment,
+            row["expense_type"],
+            amt,
+            row["transaction_currency"],
+            row["date"],
+            row["vendor_name"]
         ])
- # -------- TXT DOWNLOAD --------
-    if file_type == "txt":
-        output = io.StringIO()
-        writer = csv.writer(output)
-        writer.writerows(rows)
+ 
+    df = pd.DataFrame(rows)
+ 
+    if file_type == "xlsx":
+        output = io.BytesIO()
+        df.to_excel(output, index=False, header=False)
         output.seek(0)
-
-        return send_file(
-            io.BytesIO(output.getvalue().encode("utf-8")),
-            mimetype="text/csv",
-            as_attachment=True,
-            download_name="Transactions.txt"
-        )
-
-    # -------- EXCEL DOWNLOAD --------
-    wb = Workbook()
-    ws = wb.active
-
-    for r in rows:
-        ws.append(r)
-
-    excel_stream = io.BytesIO()
-    wb.save(excel_stream)
-    excel_stream.seek(0)
-
-    return send_file(
-        excel_stream,
-        as_attachment=True,
-        download_name="Transactions.xlsx",
-        mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-    )
-
-
+        return send_file(output, download_name="transactions.xlsx", as_attachment=True)
+ 
+    elif file_type == "csv":
+        output = io.StringIO()
+        df.to_csv(output, index=False, header=False)
+        mem = io.BytesIO(output.getvalue().encode("utf-8"))
+        mem.seek(0)
+        return send_file(mem, download_name="transactions.txt", mimetype="text/plain", as_attachment=True)
+ 
+    return "Invalid format selected"
+ 
+ 
 if __name__ == "__main__":
     app.run(debug=True)
