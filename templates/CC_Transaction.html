@@ -82,7 +82,7 @@ th { background:#2c3e50; color:white; }
   display:grid;
   grid-template-columns:1fr 100px;
   gap:10px;
-  margin-bottom:8px;
+  margin-bottom:4px;
 }
 </style>
 </head>
@@ -126,16 +126,7 @@ th { background:#2c3e50; color:white; }
 <option>RuPay</option>
 </select>
 </div>
- 
-<div>
-<label>From Date</label>
-<input type="date" name="from_date" required>
-</div>
- 
-<div>
-<label>To Date</label>
-<input type="date" name="to_date" required>
-</div>
+
  
 <div>
 <label>Currency</label>
@@ -147,13 +138,24 @@ th { background:#2c3e50; color:white; }
 </select>
 </div>
  
+<div>
+<label>From Date</label>
+<input type="date" name="from_date" required>
+</div>
+ 
+<div>
+<label>To Date</label>
+<input type="date" name="to_date" required>
+</div>
+
+ 
 <!-- Dynamic Expense Types -->
-<div style="grid-column: span 2;">
+<div style="grid-column: span 1;">
 <label>Expense Types</label>
 <div id="expense-container">
   <div class="expense-row">
-    <input type="text" name="expense_name[]" placeholder="Expense Type" required pattern="[A-Za-z ]+">
-    <input type="number" name="expense_count[]" placeholder="Count" min="1" required>
+    <input type="text" name="expense_name[]" placeholder="Expense Type" required pattern="[A-Za-z ]+" style="margin-right: 4px"> 
+	<input type="number" name="expense_count[]" placeholder="Count" min="1" required>
   </div>
 </div>
 <button type="button" onclick="addExpense()">+ Add More</button>
@@ -176,7 +178,8 @@ th { background:#2c3e50; color:white; }
 <option value="xlsx">Excel</option>
 <option value="csv">Text</option>
 </select>
- 
+ <br>
+ <br>
 <button type="submit">Preview Transactions</button>
  
 </div>
